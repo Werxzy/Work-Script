@@ -10,7 +10,6 @@ function go_to(x)
 	context.line = x
 end
 
--- combinds functionality to improve performance
 function branch_gt(x, y, b)
 	if(x > y) context.line = b
 end
@@ -26,8 +25,8 @@ function math(...)
 	local val = iter()
 	for m in iter do
 		local n = iter()
-		if m == "-" then val -= n
-		elseif m == "+" then val += n
+		if m == "+" then val += n
+		elseif m == "-" then val -= n
 		elseif m == "*" then val *= n
 		elseif m == "/" then val /= n
 		elseif m == "\\" then val \= n
@@ -42,9 +41,14 @@ function custom_function(name)
 	-- don't do local context, because it could change later on
 	-- may need to ~compile~ func
 	return function(...)
-		add(context.stack, {context.program, context.line, context.loc_var})
-		local func = works_func[name]
-		context.program, context.program_len, context.line, context.loc_var = func, #func, 0, {...}
+		if context.returning then
+			context.returning = false
+			return unpack(globals[0])
+		else
+			add(context.stack, {context.program, context.line, context.loc_var})
+			local func = works_func[name]
+			context.program, context.program_len, context.line, context.loc_var = func, #func, 0, {...}
+		end
 		-- due to the order of things, we don't need to worry about program line
 		
 		-- may need to figure something out for returning variables from these functions, 
@@ -61,39 +65,27 @@ end
 function returning(...)
 	globals[0] = {...}
 	context.program, context.line, context.loc_var = unpack(deli(context.stack))
-	context.program_len = #context.program
+	context.line -= 1
+	context.returning, context.program_len = true, #context.program
 end
 
-
+-- need to test using indexing instead of functions to potentially boost performance
 function get_val(val, ty)
-	if ty == 0 then
-		return function() return val end
-		
-	elseif ty == 1 then
-		local globals = globals -- could have these in a "do end"
-		return function() return globals[val] end
-
-	elseif ty == 2 then
-		return function() return context.loc_var[val] end
-
-	elseif ty == 3 then
-		return function() return context.obj_var[val] end
-	end
+	local globals = globals
+	return ty == 0 and function() return val end
+		or ty == 1 and function() return globals[val] end
+		or ty == 2 and function() return context.loc_var[val] end
+		or ty == 3 and function() return context.obj_var[val] end
 end
 
 function set_val(key, ty)
-	if ty == 1 then
-		local globals = globals
-		return function(val) globals[key] = val end
-
-	elseif ty == 2 then
-		return function(val) context.loc_var[key] = val end
-
-	elseif ty == 3 then
-		return function(val) context.obj_var[key] = val end
-	end
+	local globals = globals
+	return ty == 1 and function(val) globals[key] = val end
+		or ty == 2 and function(val) context.loc_var[key] = val end
+		or ty == 3 and function(val) context.obj_var[key] = val end
 end
-
+--[[ 
+-- slightly better performance
 function prep_call(inst)
 	local inst, par, ret = unpack(inst)
 	inst = works_functions_list[inst]
@@ -168,6 +160,24 @@ function prep_call(inst)
 		end
 	end
 end
+--]]
+-- [[
+	-- alternative using fewer tokens
+function prep_call(inst)
+	local param, inst, par, ret = {}, unpack(inst)
+	inst = works_functions_list[inst]
+
+	return function()
+		for i, p in next, par do
+			param[i] = p()
+		end
+		local r = {inst(unpack(param))}
+		for i = 1,min(#ret,#r) do
+			ret[i](r[i])
+		end
+	end
+end
+--]]
 
 function works_compile()
 	works_compile_prep()

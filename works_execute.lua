@@ -11,6 +11,7 @@ function works_create_program(inst, obj)
 		line = 1,
 		stack = {}, -- {{program_current, program_line, loc_var}, ...} (to be placed back into program, program_line, loc_var)
 		waiting = 0,
+        returning = false,
 	}
 
     function loc_cont.call()
@@ -24,10 +25,9 @@ function works_create_program(inst, obj)
         ::popped::
 
 		while loc_cont.line <= loc_cont.program_len do -- while inside the program
-            asdf = loc_cont.program[loc_cont.line]
 			loc_cont.program[loc_cont.line]()
 			loc_cont.line += 1
-			if(loc_cont.waiting > 0) return -- exit if yielded
+			if(loc_cont.waiting > 0) return -- exit if waiting
 		end
 
 		-- end of program (only way to reach here is to go passed the last line)

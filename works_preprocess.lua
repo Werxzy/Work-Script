@@ -14,7 +14,8 @@ function works_preprocess(name, str)
 
 	-- process each line
 	for i, l in ipairs(lines) do
-		l = split(l, ":", false)
+
+		l = split(split(l, "/", false)[1], ":", false)
 		
 		-- compile labels
 		for j = 1,#l-1 do
