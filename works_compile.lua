@@ -9,15 +9,15 @@ function wait(x)
 end
 
 function go_to(x)
-	context.line = x
+	context.exe_line = x
 end
 
 function branch_gt(x, y, b)
-	if(x > y) context.line = b
+	if(x > y) context.exe_line = b
 end
 
 function branch(t, b)
-	if(t) context.line = b
+	if(t) context.exe_line = b
 end
 
 -- need to test, probably faster than just having individual functions
@@ -45,9 +45,9 @@ function custom_function(name)
 			context.returning = false
 			return unpack(works_returned)
 		else
-			add(context.stack, {context.program, context.line, context.var[3]})
-			local func = works_func[name]
-			context.program, context.program_len, context.line, context.var[3] = func, #func, 0, {...}
+			local _ENV, add, func = context, add, works_func[name]
+			add(stack, {program, exe_line, var[3]})
+			program, program_len, exe_line, var[3] = func, #func, 0, {...}
 		end
 		-- due to the order of things, we don't need to worry about program line
 	end
@@ -55,9 +55,12 @@ end
 
 function returning(...)
 	works_returned = {...}
-	context.program, context.line, context.var[3] = unpack(deli(context.stack))
-	context.line -= 1
-	context.returning, context.program_len = true, #context.program
+
+	local _ENV, unpack, deli = context, unpack, deli
+	
+	program, exe_line, var[3] = unpack(deli(stack))
+	exe_line -= 1
+	returning, program_len = true, #program
 end
 
 -- [[
@@ -87,8 +90,8 @@ function prep_call(inst)
 	if ret_count == 0 then
 		return function()
 			local v = context.var
-			for i = 1, par_count do
-				param[i] = v[par_ty[i]][par[i]]
+			for i,p in next, par do
+				param[i] = v[par_ty[i]][p]
 			end
 			inst(unpack(param))
 		end
@@ -105,18 +108,100 @@ function prep_call(inst)
 		return inst
 	end
 --]=]
-	
+--[=[ 
 	return function()
 		local v = context.var
-		for i = 1, par_count do
-			param[i] = v[par_ty[i]][par[i]]
+		for i,p in next, par do
+			param[i] = v[par_ty[i]][p]
 		end
 
 		local r = {inst(unpack(param))}
 		for i = 1, min(ret_count, #r) do
 			v[ret_ty[i]][ret[i]] = r[i]
 		end
+	end 
+--]=]
+
+
+-- [=[
+	if ret_count == 0 then
+		if par_count == 0 then
+			return inst
+
+		elseif par_count == 1 then
+			par_ty, par = par_ty[1], par[1]
+			return function()
+				inst(context.var[par_ty][par])
+			end 
+
+		else
+			return function()
+				local v = context.var
+				for i, p in next, par do
+					param[i] = v[par_ty[i]][p]
+				end
+				inst(unpack(param))
+			end
+		end
+
+	elseif ret_count == 1 then
+		ret_ty, ret = ret_ty[1], ret[1]
+
+		if par_count == 0 then
+			return function() 
+				context.var[ret_ty][ret] = inst()
+			end
+
+		elseif par_count == 1 then
+			par_ty, par = par_ty[1], par[1]
+			return function()
+				context.var[ret_ty][ret] = inst(context.var[par_ty][par])
+			end 
+
+		else
+			return function()
+				local v = context.var
+				for i, p in next, par do
+					param[i] = v[par_ty[i]][p]
+				end
+				context.var[ret_ty][ret] = inst(unpack(param))
+			end
+			
+		end
+
+	else
+		if par_count == 0 then
+			return function() 
+				local r = {inst()}
+				for i = 1, min(ret_count, #r) do
+					v[ret_ty[i]][ret[i]] = r[i]
+				end
+			end
+
+		elseif par_count == 1 then
+			par_ty, par = par_ty[1], par[1]
+			return function()
+				local r = {inst(context.var[par_ty][par])}
+				for i = 1, min(ret_count, #r) do
+					v[ret_ty[i]][ret[i]] = r[i]
+				end
+			end 
+
+		else
+			return function()
+				local v = context.var
+				for i, p in next, par do
+					param[i] = v[par_ty[i]][p]
+				end
+		
+				local r = {inst(unpack(param))}
+				for i = 1, min(ret_count, #r) do
+					v[ret_ty[i]][ret[i]] = r[i]
+				end
+			end
+		end
 	end
+--]=]
 end
 --]]
 
