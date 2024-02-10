@@ -1,5 +1,5 @@
 
-works_programs, globals = {}, {}
+works_programs, works_globals = {}, {}
 
 function works_create_program(inst, obj)
     inst = works_func[inst]
