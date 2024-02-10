@@ -7,10 +7,7 @@ works_func, works_functions_list, works_functions_count = {}, {}, 0
 function works_preprocess(name, str)
 
 	-- split lines by \n and ;
-	local lines = double_split(str, "\n", ";")
-
-	local labels, instructions = {}, {}
-
+	local lines, labels, instructions, final_inst = double_split(str, "\n", ";"), {}, {}, {}
 
 	-- process each line
 	for i, l in ipairs(lines) do
@@ -33,19 +30,16 @@ function works_preprocess(name, str)
 		end
 	end
 
-	local final_inst = {}
 	for inst in all(instructions) do
 
-		local id = works_functions_list[inst[1]]
+		local id, i, param, ret = works_functions_list[inst[1]], 1, {}, {}
 		if id then
 			inst[1] = id
 		else
 			works_functions_count += 1
-			works_functions_list[inst[1]] = works_functions_count
-			inst[1] = works_functions_count
+			works_functions_list[inst[1]], inst[1] = works_functions_count, works_functions_count
 		end
 
-		local i, param = 1, {}
 		while i < #inst do
 			i += 1
 			local s = inst[i]
@@ -53,7 +47,6 @@ function works_preprocess(name, str)
 			add(param, calc_param(s, labels))
 		end
 
-		local ret = {}
 		while i < #inst do
 			i += 1
 			add(ret, calc_param(inst[i], labels))
@@ -75,10 +68,9 @@ function calc_param(p, lab)
 
 	ty = ty == "@" and 2 or ty == "_" and 3 or ty == "." and 4 or 1
 	if ty == 1 then
-		return {tonum(p) or p, ty}
+		p = sub(p, 2)
 	end
-	local v = sub(p, 2)
-	return {tonum(v) or v, ty}
+	return {tonum(p) or p, ty}
 end
 
 
