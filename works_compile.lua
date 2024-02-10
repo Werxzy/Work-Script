@@ -60,112 +60,6 @@ function returning(...)
 	context.returning, context.program_len = true, #context.program
 end
 
--- returns a function that gets a value for a parameter.
--- need to test using indexing instead of functions to potentially boost performance
--- function get_val(val, ty)
--- 	local globals = globals
--- 	return ty == 1 and function() return val end
--- 		or ty == 2 and function() return globals[val] end
--- 		or ty == 3 and function() return context.loc_var[val] end
--- 		or ty == 4 and function() return context.obj_var[val] end
--- end
-function get_val(val, ty)
-	if ty == 1 then
-		add(works_constants, val)
-		val = #works_constants
-	end
-
-	return function() return context.var[ty][val] end
-end
-
--- returns a function that sets a value to a returned value.
--- function set_val(key, ty)
--- 	local globals = globals
--- 	return ty == 2 and function(val) globals[key] = val end
--- 		or ty == 3 and function(val) context.loc_var[key] = val end
--- 		or ty == 4 and function(val) context.obj_var[key] = val end
--- end
-function set_val(key, ty)
-	-- ty should not equal 1 (would work and be funny though)
-	return function(val) context.var[ty][key] = val end
-end
---[[ 
--- slightly better performance
-function prep_call(inst)
-	local inst, par, ret = unpack(inst)
-	inst = works_functions_list[inst]
-	local ret_none, ret_one = not ret or #ret == 0, #ret == 1 and ret[1]
-
-	if not par or #par == 0 then -- no parameter
-		if ret_none then -- no return
-			return inst -- no need for wrapping
-
-		elseif #ret_one == 1 then -- single return
-			return function()
-				ret_one(inst())
-			end
-
-		else -- multiple return
-			return function()
-				for i, r in inext, {inst()} do
-					ret[i](r)
-				end
-			end
-		end
-
-	elseif #par == 1 then -- single parameter
-		par = par[1]
-		if ret_none then -- no return
-			return function()
-				inst(par())
-			end
-
-		elseif ret_one then -- single return
-			return function()
-				ret_one(inst(par()))
-			end
-
-		else -- multiple return
-			return function()
-				for i, r in inext, {inst(par())} do
-					ret[i](r)
-				end
-			end
-		end
-
-	else -- multiple parameter
-		local param = {}
-		if ret_none then -- no return
-			return function()
-				for i, p in next, par do
-					param[i] = p()
-				end
-				inst(unpack(param)) 
-				-- todo? could use a custom recursive version of unpack, since p() need to be called, 
-				-- about twice as expensive, but may save some performance due to using a loop for par
-			end
-			
-		elseif ret_one then -- single return
-			return function()
-				for i, p in next, par do
-					param[i] = p()
-				end
-				ret_one(inst(unpack(param)))
-			end
-			
-		else -- multiple return
-			return function()
-				for i, p in next, par do
-					param[i] = p()
-				end
-				for i, r in inext, {inst(unpack(param))} do
-					ret[i](r)
-				end
-			end
-		end
-	end
-end
---]]
 -- [[
 -- alternative using fewer tokens
 -- returns a function that calls a function with given parameters and set variables with given returned values.
@@ -173,13 +67,54 @@ function prep_call(inst)
 	local param, inst, par, ret = {}, unpack(inst)
 	inst = works_functions_list[inst]
 
-	return function()
-		for i, p in next, par do
-			param[i] = p()
+	local par_ty, par_count = {}, #par
+	for i = 1, par_count do
+		if par[i][2] == 1 then
+			add(works_constants, par[i][1])
+			par[i][1] = #works_constants
 		end
+		add(par_ty, par[i][2])
+		par[i] = par[i][1]
+	end
+
+	local ret_ty, ret_count = {}, #ret
+	for i = 1, ret_count do
+		add(ret_ty, ret[i][2])
+		ret[i] = ret[i][1]
+	end
+	
+--[=[ optional boost by not using unneeded parts
+	if ret_count == 0 then
+		return function()
+			local v = context.var
+			for i = 1, par_count do
+				param[i] = v[par_ty[i]][par[i]]
+			end
+			inst(unpack(param))
+		end
+
+	elseif par_count == 0 then
+		return function()
+			local r = {inst()}
+			for i = 1, min(ret_count, #r) do
+				v[ret_ty[i]][ret[i]] = r[i]
+			end
+		end
+	
+	elseif par_count == 0 and ret_count == 0 then
+		return inst
+	end
+--]=]
+	
+	return function()
+		local v = context.var
+		for i = 1, par_count do
+			param[i] = v[par_ty[i]][par[i]]
+		end
+
 		local r = {inst(unpack(param))}
-		for i = 1,min(#ret,#r) do
-			ret[i](r[i])
+		for i = 1, min(ret_count, #r) do
+			v[ret_ty[i]][ret[i]] = r[i]
 		end
 	end
 end
@@ -191,18 +126,6 @@ function works_compile()
 
 	for n, tab in next, works_func do
 		for i, inst in next, tab do
-			-- !!! turn the parameter info into function calls
-
-			local _, par, ret = unpack(inst)
-			for j, var in next, par do
-				par[j] = get_val(unpack(var))
-			end
-
-			for j, var in next, ret do
-				ret[j] = set_val(unpack(var))
-			end
-
-			-- !!! turn test_instructions into callable functions
 			tab[i] = prep_call(inst)
 		end
 	end
