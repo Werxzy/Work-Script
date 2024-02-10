@@ -45,7 +45,7 @@ function custom_function(name)
 			context.returning = false
 			return unpack(works_returned)
 		else
-			local _ENV, add, func = context, add, works_func[name]
+			local _ENV, func = context, works_func[name]
 			add(stack, {program, exe_line, var[3]})
 			program, program_len, exe_line, var[3] = func, #func, 0, {...}
 		end
@@ -56,7 +56,7 @@ end
 function returning(...)
 	works_returned = {...}
 
-	local _ENV, unpack, deli = context, unpack, deli
+	local _ENV, unpack = context, unpack
 	
 	program, exe_line, var[3] = unpack(deli(stack))
 	exe_line -= 1
