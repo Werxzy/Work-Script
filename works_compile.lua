@@ -1,3 +1,5 @@
+-- used to set or copy variables
+-- set 1 2 3 = _a _b _c
 function set(...) -- this is kinda silly
 	return ...
 end
@@ -38,37 +40,27 @@ function math(...)
 end
 
 function custom_function(name)
-	-- don't do local context, because it could change later on
-	-- may need to ~compile~ func
 	return function(...)
 		if context.returning then
 			context.returning = false
-			return unpack(globals[0])
+			return unpack(works_returned)
 		else
 			add(context.stack, {context.program, context.line, context.loc_var})
 			local func = works_func[name]
 			context.program, context.program_len, context.line, context.loc_var = func, #func, 0, {...}
 		end
 		-- due to the order of things, we don't need to worry about program line
-		
-		-- may need to figure something out for returning variables from these functions, 
-		-- maybe a specific scope of variable, or just a global variable
-		-- below, I just automatically set any variables after returning to globals[0]
-		-- can be used with unpack later with "unpack @0 = _a _b _c"
-		
-		-- could instead recognize the two functions as unique and give them special instructions
-		-- other functions like set could also be given special treatment, as it's only passing the data
-		-- this could add a lot of tokens though
 	end
 end
 
 function returning(...)
-	globals[0] = {...}
+	works_returned = {...}
 	context.program, context.line, context.loc_var = unpack(deli(context.stack))
 	context.line -= 1
 	context.returning, context.program_len = true, #context.program
 end
 
+-- returns a function that gets a value for a parameter.
 -- need to test using indexing instead of functions to potentially boost performance
 function get_val(val, ty)
 	local globals = globals
@@ -78,6 +70,7 @@ function get_val(val, ty)
 		or ty == 3 and function() return context.obj_var[val] end
 end
 
+-- returns a function that sets a value to a returned value.
 function set_val(key, ty)
 	local globals = globals
 	return ty == 1 and function(val) globals[key] = val end
@@ -162,7 +155,8 @@ function prep_call(inst)
 end
 --]]
 -- [[
-	-- alternative using fewer tokens
+-- alternative using fewer tokens
+-- returns a function that calls a function with given parameters and set variables with given returned values.
 function prep_call(inst)
 	local param, inst, par, ret = {}, unpack(inst)
 	inst = works_functions_list[inst]
@@ -179,19 +173,20 @@ function prep_call(inst)
 end
 --]]
 
+-- compiles all prepared functions
 function works_compile()
 	works_compile_prep()
 
-	for n, tab in pairs(works_func) do
-		for i, inst in pairs(tab) do
+	for n, tab in next, works_func do
+		for i, inst in next, tab do
 			-- !!! turn the parameter info into function calls
 
 			local _, par, ret = unpack(inst)
-			for j, var in pairs(par) do
+			for j, var in next, par do
 				par[j] = get_val(unpack(var))
 			end
 
-			for j, var in pairs(ret) do
+			for j, var in next, ret do
 				ret[j] = set_val(unpack(var))
 			end
 

@@ -17,26 +17,29 @@ function works_create_program(inst, obj)
     function loc_cont.call()
 		context = loc_cont -- important to let outside functions know the current context
 
-		if loc_cont.waiting > 0 then -- wait a certain number of times called
+        -- wait a certain number of times called before continuing execution
+		if loc_cont.waiting > 0 then 
 			loc_cont.waiting -= 1
 			if(loc_cont.waiting > 0) return
 		end
 		
         ::popped::
 
-		while loc_cont.line <= loc_cont.program_len do -- while inside the program
+         -- while inside the program
+		while loc_cont.line <= loc_cont.program_len do
 			loc_cont.program[loc_cont.line]()
 			loc_cont.line += 1
 			if(loc_cont.waiting > 0) return -- exit if waiting
 		end
 
-		-- end of program (only way to reach here is to go passed the last line)
-        local s = deli(context.stack)
+		-- end of function (without returning) pop stack
+        local s = deli(loc_cont.stack)
         if s then
-            context.program, context.line, context.loc_var = unpack(s)
-            context.program_len = #context.program
+            loc_cont.program, loc_cont.line, loc_cont.loc_var = unpack(s)
+            loc_cont.program_len = #loc_cont.program
             goto popped
         else
+            -- no longer executing
             del(works_programs, loc_cont)
         end 
 	end
@@ -45,7 +48,7 @@ function works_create_program(inst, obj)
 end
 
 function works_execute()
-    for p in all(works_programs) do
+    for _, p in next, works_programs do
         p.call()
     end
 end

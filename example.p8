@@ -12,7 +12,7 @@ func = {
 loop:
 	cls
 	rectfill 10 10 100 _a 8
-/		math 1 + _a % 20 = _a
+/	math 1 + _a % 20 = _a
 	adding _a = _a
 	rnd 10 = _b
 	wait 1
@@ -23,7 +23,7 @@ loop:
 	math 1 + _1 % 20 = _1
 	returning _1
 ]]
-	}
+}
 
 for k,v in pairs(func) do
 	works_preprocess(k, v)
