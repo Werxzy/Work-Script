@@ -64,18 +64,18 @@ end
 -- need to test using indexing instead of functions to potentially boost performance
 function get_val(val, ty)
 	local globals = globals
-	return ty == 0 and function() return val end
-		or ty == 1 and function() return globals[val] end
-		or ty == 2 and function() return context.loc_var[val] end
-		or ty == 3 and function() return context.obj_var[val] end
+	return ty == 1 and function() return val end
+		or ty == 2 and function() return globals[val] end
+		or ty == 3 and function() return context.loc_var[val] end
+		or ty == 4 and function() return context.obj_var[val] end
 end
 
 -- returns a function that sets a value to a returned value.
 function set_val(key, ty)
 	local globals = globals
-	return ty == 1 and function(val) globals[key] = val end
-		or ty == 2 and function(val) context.loc_var[key] = val end
-		or ty == 3 and function(val) context.obj_var[key] = val end
+	return ty == 2 and function(val) globals[key] = val end
+		or ty == 3 and function(val) context.loc_var[key] = val end
+		or ty == 4 and function(val) context.obj_var[key] = val end
 end
 --[[ 
 -- slightly better performance

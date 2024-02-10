@@ -70,13 +70,12 @@ function calc_param(p, lab)
 
 	if ty == "#" then
 		assert(lab[sub(p, 2)], "label doesn't exist")
-		return {lab[sub(p, 2)], 0}
+		return {lab[sub(p, 2)], 1}
 	end
 
-	ty = ty == "@" and 1 or ty == "_" and 2 or ty == "." and 3 or 0
-	if ty == 0 then
-		local v = sub(p, 1)
-		return {tonum(v) or v, ty}
+	ty = ty == "@" and 2 or ty == "_" and 3 or ty == "." and 4 or 1
+	if ty == 1 then
+		return {tonum(p) or p, ty}
 	end
 	local v = sub(p, 2)
 	return {tonum(v) or v, ty}
