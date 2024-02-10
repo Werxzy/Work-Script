@@ -48,7 +48,7 @@ function works_create_program(inst, obj)
 end
 
 function works_execute()
-    for _, p in next, works_programs do
+    for p in all(works_programs) do
         p.call()
     end
 end
