@@ -8,7 +8,7 @@ function works_create_program(inst, obj)
 		obj_var = obj or {},
 		program = inst, -- list of functions
 		program_len = #inst, 
-		line = 1,
+		line_exe = 1,
 		stack = {}, -- {{program_current, program_line, loc_var}, ...} (to be placed back into program, program_line, loc_var)
 		waiting = 0,
         returning = false,
@@ -16,7 +16,7 @@ function works_create_program(inst, obj)
 
     function loc_cont.call()
 		context = loc_cont -- important to let outside functions know the current context
-
+		
         -- wait a certain number of times called before continuing execution
 		if loc_cont.waiting > 0 then 
 			loc_cont.waiting -= 1
@@ -26,16 +26,16 @@ function works_create_program(inst, obj)
         ::popped::
 
          -- while inside the program
-		while loc_cont.line <= loc_cont.program_len do
-			loc_cont.program[loc_cont.line]()
-			loc_cont.line += 1
+		while loc_cont.line_exe <= loc_cont.program_len do
+			loc_cont.program[loc_cont.line_exe]()
+			loc_cont.line_exe += 1
 			if(loc_cont.waiting > 0) return -- exit if waiting
 		end
 
 		-- end of function (without returning) pop stack
         local s = deli(loc_cont.stack)
         if s then
-            loc_cont.program, loc_cont.line, loc_cont.loc_var = unpack(s)
+            loc_cont.program, loc_cont.line_exe, loc_cont.loc_var = unpack(s)
             loc_cont.program_len = #loc_cont.program
             goto popped
         else

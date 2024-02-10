@@ -9,15 +9,15 @@ function wait(x)
 end
 
 function go_to(x)
-	context.line = x
+	context.line_exe = x
 end
 
 function branch_gt(x, y, b)
-	if(x > y) context.line = b
+	if(x > y) context.line_exe = b
 end
 
 function branch(t, b)
-	if(t) context.line = b
+	if(t) context.line_exe = b
 end
 
 -- need to test, probably faster than just having individual functions
@@ -45,9 +45,9 @@ function custom_function(name)
 			context.returning = false
 			return unpack(works_returned)
 		else
-			add(context.stack, {context.program, context.line, context.loc_var})
-			local func = works_func[name]
-			context.program, context.program_len, context.line, context.loc_var = func, #func, 0, {...}
+			local _ENV, add, func = context, add, works_func[name]
+			add(stack, {program, line_exe, loc_var})
+			program, program_len, line_exe, loc_var = func, #func, 0, {...}
 		end
 		-- due to the order of things, we don't need to worry about program line
 	end
@@ -55,9 +55,12 @@ end
 
 function returning(...)
 	works_returned = {...}
-	context.program, context.line, context.loc_var = unpack(deli(context.stack))
-	context.line -= 1
-	context.returning, context.program_len = true, #context.program
+	
+	local _ENV, unpack, deli = context, unpack, deli
+
+	program, line_exe, loc_var = unpack(deli(stack))
+	line_exe -= 1
+	returning, program_len = true, #program
 end
 
 -- returns a function that gets a value for a parameter.
@@ -77,7 +80,7 @@ function set_val(key, ty)
 		or ty == 3 and function(val) context.loc_var[key] = val end
 		or ty == 4 and function(val) context.obj_var[key] = val end
 end
---[[ 
+-- [[ 
 -- slightly better performance
 function prep_call(inst)
 	local inst, par, ret = unpack(inst)
@@ -154,7 +157,7 @@ function prep_call(inst)
 	end
 end
 --]]
--- [[
+--[[
 -- alternative using fewer tokens
 -- returns a function that calls a function with given parameters and set variables with given returned values.
 function prep_call(inst)
