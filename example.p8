@@ -10,11 +10,11 @@ func = {
 	test = [[
 	set 1 = _a
 loop:
-	cls
-	rectfill 10 10 100 _a 8
+/	rectfill 10 10 100 _a 8
 /	math 1 + _a % 20 = _a
 	adding _a = _a
 	rnd 10 = _b
+
 	wait 1
 	go_to #loop
 
@@ -30,10 +30,15 @@ for k,v in pairs(func) do
 end
 
 works_compile()
-works_create_program("test")
+for i = 1,100 do
+	works_create_program("test")
+end
 
 function _draw()
+	cls()
 	works_execute()
+	print("mem "..stat(0), 64, 64, 7)
+	print("cpu "..stat(1))
 end
 
 __gfx__

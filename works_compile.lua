@@ -83,15 +83,15 @@ end
 function prep_call(inst)
 	local inst, par, ret = unpack(inst)
 	inst = works_functions_list[inst]
-	local ret_none, ret_one = not ret or #ret == 0, #ret == 1 and ret[1]
+	local ret_none, ret_one, par_count = #ret == 0, #ret == 1 and ret[1], #par
 
-	if not par or #par == 0 then -- no parameter
+	if par_count == 0 then -- no parameter
 		if ret_none then -- no return
 			return inst -- no need for wrapping
 
 		elseif ret_one then -- single return
-			return function()
-				ret_one(inst())
+			return function() 
+				ret_one(inst()) 
 			end
 
 		else -- multiple return
@@ -102,16 +102,16 @@ function prep_call(inst)
 			end
 		end
 
-	elseif #par == 1 then -- single parameter
+	elseif par_count == 1 then -- single parameter
 		par = par[1]
 		if ret_none then -- no return
-			return function()
-				inst(par())
+			return function() 
+				inst(par()) 
 			end
 
 		elseif ret_one then -- single return
-			return function()
-				ret_one(inst(par()))
+			return function() 
+				ret_one(inst(par())) 
 			end
 
 		else -- multiple return
@@ -123,36 +123,25 @@ function prep_call(inst)
 		end
 
 	else -- multiple parameter
-		local param = {}
 		if ret_none then -- no return
-			return function()
-				for i, p in next, par do
-					param[i] = p()
-				end
-				inst(unpack(param)) 
-				-- todo? could use a custom recursive version of unpack, since p() need to be called, 
-				-- about twice as expensive, but may save some performance due to using a loop for par
-			end
+			return function() inst(unpack_param(par, 1, par_count)) end
 			
 		elseif ret_one then -- single return
-			return function()
-				for i, p in next, par do
-					param[i] = p()
-				end
-				ret_one(inst(unpack(param)))
-			end
+			return function() ret_one(inst(unpack_param(par, 1, par_count))) end
 			
 		else -- multiple return
 			return function()
-				for i, p in next, par do
-					param[i] = p()
-				end
-				for i, r in inext, {inst(unpack(param))} do
+				for i, r in inext, {inst(unpack_param(par, 1, par_count))} do
 					ret[i](r)
 				end
 			end
 		end
 	end
+end
+
+function unpack_param(p, i, s)
+	if(i < s) return p[i](), unpack_param(p, i+1, s)
+	return p[i]()
 end
 --]]
 --[[
