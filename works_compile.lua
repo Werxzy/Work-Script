@@ -82,17 +82,14 @@ end
 -- slightly better performance
 function prep_call(inst)
 	local inst, par, ret = unpack(inst)
-	inst = works_functions_list[inst]
-	local ret_none, ret_one, par_count = #ret == 0, #ret == 1 and ret[1], #par
+	local inst, ret_none, ret_one, par_count, param = works_functions_list[inst], #ret == 0, #ret == 1 and ret[1], #par, {}
 
 	if par_count == 0 then -- no parameter
 		if ret_none then -- no return
 			return inst -- no need for wrapping
 
 		elseif ret_one then -- single return
-			return function() 
-				ret_one(inst()) 
-			end
+			return function() ret_one(inst()) end
 
 		else -- multiple return
 			return function()
@@ -105,14 +102,10 @@ function prep_call(inst)
 	elseif par_count == 1 then -- single parameter
 		par = par[1]
 		if ret_none then -- no return
-			return function() 
-				inst(par()) 
-			end
+			return function() inst(par()) end
 
 		elseif ret_one then -- single return
-			return function() 
-				ret_one(inst(par())) 
-			end
+			return function() ret_one(inst(par())) end
 
 		else -- multiple return
 			return function()
@@ -124,24 +117,32 @@ function prep_call(inst)
 
 	else -- multiple parameter
 		if ret_none then -- no return
-			return function() inst(unpack_param(par, 1, par_count)) end
+			return function()
+				for i, p in next, par do
+					param[i] = p()
+				end
+				inst(unpack(param))
+			end
 			
 		elseif ret_one then -- single return
-			return function() ret_one(inst(unpack_param(par, 1, par_count))) end
+			return function()
+				for i, p in next, par do
+					param[i] = p()
+				end
+				ret_one(inst(unpack(param)))
+			end
 			
 		else -- multiple return
 			return function()
-				for i, r in inext, {inst(unpack_param(par, 1, par_count))} do
+				for i, p in next, par do
+					param[i] = p()
+				end
+				for i, r in inext, {inst(unpack(param))} do
 					ret[i](r)
 				end
 			end
 		end
 	end
-end
-
-function unpack_param(p, i, s)
-	if(i < s) return p[i](), unpack_param(p, i+1, s)
-	return p[i]()
 end
 --]]
 --[[
@@ -165,8 +166,14 @@ end
 
 -- compiles all prepared functions
 function works_compile()
-	works_compile_prep()
+	-- creates table of functions based on what is used in the compile functions
+	local new_list = {}
+	for k,v in pairs(works_functions_list) do
+		new_list[v] = works_func[k] and custom_function(k) or _ENV[k]
+	end
+	works_functions_list = new_list
 
+	-- turn the function data into callable functions
 	for n, tab in next, works_func do
 		for i, inst in next, tab do
 			-- !!! turn the parameter info into function calls
@@ -185,12 +192,3 @@ function works_compile()
 		end
 	end
 end
-
-function works_compile_prep()
-	local new_list = {}
-	for k,v in pairs(works_functions_list) do
-		new_list[v] = works_func[k] and custom_function(k) or _ENV[k]
-	end
-	works_functions_list = new_list
-end
-
