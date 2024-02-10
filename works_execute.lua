@@ -1,11 +1,10 @@
 
-works_programs, globals = {}, {}
+works_programs, works_globals, works_constants = {}, {}, {}
 
 function works_create_program(inst, obj)
     inst = works_func[inst]
 	local loc_cont = {
-		loc_var = {},
-		obj_var = obj or {},
+		var = {works_constants, works_globals, {}, obj or {}},
 		program = inst, -- list of functions
 		program_len = #inst, 
 		line = 1,
@@ -35,7 +34,7 @@ function works_create_program(inst, obj)
 		-- end of function (without returning) pop stack
         local s = deli(loc_cont.stack)
         if s then
-            loc_cont.program, loc_cont.line, loc_cont.loc_var = unpack(s)
+            loc_cont.program, loc_cont.line, loc_cont[3] = unpack(s)
             loc_cont.program_len = #loc_cont.program
             goto popped
         else

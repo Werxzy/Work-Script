@@ -45,9 +45,9 @@ function custom_function(name)
 			context.returning = false
 			return unpack(works_returned)
 		else
-			add(context.stack, {context.program, context.line, context.loc_var})
+			add(context.stack, {context.program, context.line, context.var[3]})
 			local func = works_func[name]
-			context.program, context.program_len, context.line, context.loc_var = func, #func, 0, {...}
+			context.program, context.program_len, context.line, context.var[3] = func, #func, 0, {...}
 		end
 		-- due to the order of things, we don't need to worry about program line
 	end
@@ -55,27 +55,39 @@ end
 
 function returning(...)
 	works_returned = {...}
-	context.program, context.line, context.loc_var = unpack(deli(context.stack))
+	context.program, context.line, context.var[3] = unpack(deli(context.stack))
 	context.line -= 1
 	context.returning, context.program_len = true, #context.program
 end
 
 -- returns a function that gets a value for a parameter.
 -- need to test using indexing instead of functions to potentially boost performance
+-- function get_val(val, ty)
+-- 	local globals = globals
+-- 	return ty == 1 and function() return val end
+-- 		or ty == 2 and function() return globals[val] end
+-- 		or ty == 3 and function() return context.loc_var[val] end
+-- 		or ty == 4 and function() return context.obj_var[val] end
+-- end
 function get_val(val, ty)
-	local globals = globals
-	return ty == 1 and function() return val end
-		or ty == 2 and function() return globals[val] end
-		or ty == 3 and function() return context.loc_var[val] end
-		or ty == 4 and function() return context.obj_var[val] end
+	if ty == 1 then
+		add(works_constants, val)
+		val = #works_constants
+	end
+
+	return function() return context.var[ty][val] end
 end
 
 -- returns a function that sets a value to a returned value.
+-- function set_val(key, ty)
+-- 	local globals = globals
+-- 	return ty == 2 and function(val) globals[key] = val end
+-- 		or ty == 3 and function(val) context.loc_var[key] = val end
+-- 		or ty == 4 and function(val) context.obj_var[key] = val end
+-- end
 function set_val(key, ty)
-	local globals = globals
-	return ty == 2 and function(val) globals[key] = val end
-		or ty == 3 and function(val) context.loc_var[key] = val end
-		or ty == 4 and function(val) context.obj_var[key] = val end
+	-- ty should not equal 1 (would work and be funny though)
+	return function(val) context.var[ty][key] = val end
 end
 --[[ 
 -- slightly better performance
