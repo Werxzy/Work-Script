@@ -28,6 +28,7 @@ loop:
 for k,v in pairs(func) do
 	works_preprocess(k, v)
 end
+works_finish_preprocess()
 
 works_compile()
 for i = 1,100 do

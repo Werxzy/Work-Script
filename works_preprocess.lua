@@ -1,6 +1,6 @@
 
 -- a key-value table instead of indexed as it will be faster to find function names
-works_func, works_functions_list, works_functions_count = {}, {}, 0
+works_func, works_functions_nameid, works_functions_count = {}, {}, 0
 
 -- takes a string of Work Script into tables to be compiled
 -- this is a separate step as it can be used to serialize code
@@ -12,6 +12,7 @@ function works_preprocess(name, str)
 	-- process each line
 	for i, l in ipairs(lines) do
 
+		-- ignore text after comments and get text before labels
 		l = split(split(l, "/", false)[1], ":", false)
 		
 		-- compile labels
@@ -32,12 +33,12 @@ function works_preprocess(name, str)
 
 	for inst in all(instructions) do
 
-		local id, i, param, ret = works_functions_list[inst[1]], 1, {}, {}
+		local id, i, param, ret = works_functions_nameid[inst[1]], 1, {}, {}
 		if id then
 			inst[1] = id
 		else
 			works_functions_count += 1
-			works_functions_list[inst[1]], inst[1] = works_functions_count, works_functions_count
+			works_functions_nameid[inst[1]], inst[1] = works_functions_count, works_functions_count
 		end
 
 		while i < #inst do
@@ -67,7 +68,7 @@ function calc_param(p, lab)
 	end
 
 	ty = ty == "@" and 2 or ty == "_" and 3 or ty == "." and 4 or 1
-	if ty == 1 then
+	if ty ~= 1 then
 		p = sub(p, 2)
 	end
 	return {tonum(p) or p, ty}
@@ -87,4 +88,13 @@ end
 
 function remove_empty(tab)
 	while del(tab, "") do end
+end
+
+-- turns the key table into an indexed table
+function works_finish_preprocess()
+	local new_list = {}
+	for k,v in pairs(works_functions_nameid) do
+		new_list[v] = k
+	end
+	works_functions_nameid = new_list
 end

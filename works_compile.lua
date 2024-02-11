@@ -82,7 +82,7 @@ end
 -- slightly better performance
 function prep_call(inst)
 	local inst, par, ret = unpack(inst)
-	local inst, ret_none, ret_one, par_count, param = works_functions_list[inst], #ret == 0, #ret == 1 and ret[1], #par, {}
+	local inst, ret_none, ret_one, par_count, param = works_functions_nameid[inst], #ret == 0, #ret == 1 and ret[1], #par, {}
 
 	if par_count == 0 then -- no parameter
 		if ret_none then -- no return
@@ -150,7 +150,7 @@ end
 -- returns a function that calls a function with given parameters and set variables with given returned values.
 function prep_call(inst)
 	local param, inst, par, ret = {}, unpack(inst)
-	inst = works_functions_list[inst]
+	inst = works_functions_nameid[inst]
 
 	return function()
 		for i, p in next, par do
@@ -168,10 +168,10 @@ end
 function works_compile()
 	-- creates table of functions based on what is used in the compile functions
 	local new_list = {}
-	for k,v in pairs(works_functions_list) do
-		new_list[v] = works_func[k] and custom_function(k) or _ENV[k]
+	for k,v in ipairs(works_functions_nameid) do
+		new_list[k] = works_func[v] and custom_function(v) or _ENV[v]
 	end
-	works_functions_list = new_list
+	works_functions_nameid = new_list
 
 	-- turn the function data into callable functions
 	for n, tab in next, works_func do
