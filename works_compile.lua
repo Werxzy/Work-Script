@@ -41,26 +41,26 @@ end
 
 function custom_function(name)
 	return function(...)
-		if context.returning then
-			context.returning = false
+		if works_returning then
+			works_returning = false
 			return unpack(works_returned)
 		else
 			local _ENV, func = context, works_func[name]
-			add(stack, {program, line_exe, loc_var})
-			program, program_len, line_exe, loc_var = func, #func, 0, {...}
+			add(stack, {program, program_len, line_exe, loc_var})
+			program, program_len, line_exe, loc_var = func, #func, 1, {...}
+			func[1]()
 		end
 		-- due to the order of things, we don't need to worry about program line
 	end
 end
 
 function returning(...)
-	works_returned = {...}
+	works_returning, works_returned = true, {...}
 	
-	local _ENV, unpack = context, unpack
-
-	program, line_exe, loc_var = unpack(deli(stack))
-	line_exe -= 1
-	returning, program_len = true, #program
+	local _ENV = context
+	local s = deli(stack)
+	program, program_len, line_exe, loc_var = s[1], s[2], s[3], s[4] -- unpack is a little slower
+	program[line_exe]()
 end
 
 -- returns a function that gets a value for a parameter.
