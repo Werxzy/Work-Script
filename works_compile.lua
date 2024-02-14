@@ -12,11 +12,11 @@ function go_to(x)
 	context.line_exe = x
 end
 
-function branch_gt(x, y, b)
+function branch_gt(b, x, y)
 	if(x > y) context.line_exe = b
 end
 
-function branch(t, b)
+function branch(b, t)
 	if(t) context.line_exe = b
 end
 
@@ -48,7 +48,7 @@ function custom_function(name)
 			local _ENV, func = context, works_func[name]
 			add(stack, {program, program_len, line_exe, loc_var})
 			program, program_len, line_exe, loc_var = func, #func, 1, {...}
-			func[1]()
+			func[1]() -- execute the first instruction automatically. (always will)
 		end
 		-- due to the order of things, we don't need to worry about program line
 	end
@@ -60,7 +60,7 @@ function returning(...)
 	local _ENV = context
 	local s = deli(stack)
 	program, program_len, line_exe, loc_var = s[1], s[2], s[3], s[4] -- unpack is a little slower
-	program[line_exe]()
+	program[line_exe]() -- execute the original instruction automatically. (always will)
 end
 
 -- returns a function that gets a value for a parameter.
@@ -118,7 +118,7 @@ function prep_call(inst)
 	else -- multiple parameter
 		if ret_none then -- no return
 			return function()
-				for i, p in next, par do
+				for i, p in inext, par do
 					param[i] = p()
 				end
 				inst(unpack(param))
@@ -126,7 +126,7 @@ function prep_call(inst)
 			
 		elseif ret_one then -- single return
 			return function()
-				for i, p in next, par do
+				for i, p in inext, par do
 					param[i] = p()
 				end
 				ret_one(inst(unpack(param)))
@@ -134,7 +134,7 @@ function prep_call(inst)
 			
 		else -- multiple return
 			return function()
-				for i, p in next, par do
+				for i, p in inext, par do
 					param[i] = p()
 				end
 				for i, r in inext, {inst(unpack(param))} do

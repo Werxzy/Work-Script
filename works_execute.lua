@@ -1,7 +1,7 @@
 
 works_programs, works_globals = {}, {}
 
-function works_create_program(inst, obj)
+function works_create_program(inst, run_once, unfreezable, obj)
 	inst = works_func[inst]
 	local loc_cont = {
 		loc_var = {},
@@ -11,6 +11,7 @@ function works_create_program(inst, obj)
 		line_exe = 1,
 		stack = {}, -- {{program_current, program_line, loc_var}, ...} (to be placed back into program, program_line, loc_var)
 		waiting = 0,
+		unfreezable = unfreezable,
 	}
 
 	function loc_cont.call()
@@ -52,10 +53,12 @@ function works_create_program(inst, obj)
 	end
 
 	add(works_programs, loc_cont)
+
+	if(run_once)loc_cont.call()
 end
 
-function works_execute()
+function works_execute(frozen)
 	for p in all(works_programs) do
-		p.call()
+		if(not frozen or p.unfreezable) p.call()
 	end
 end
