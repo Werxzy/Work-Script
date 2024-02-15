@@ -90,12 +90,11 @@ function prep_call(inst)
 
 		elseif ret_one then -- single return
 			return function() ret_one(inst()) end
+		end 
 
-		else -- multiple return
-			return function()
-				for i, r in inext, {inst()} do
-					ret[i](r)
-				end
+		return function() -- multiple return
+			for i, r in inext, {inst()} do
+				ret[i](r)
 			end
 		end
 
@@ -106,41 +105,39 @@ function prep_call(inst)
 
 		elseif ret_one then -- single return
 			return function() ret_one(inst(par())) end
+		end 
 
-		else -- multiple return
-			return function()
-				for i, r in inext, {inst(par())} do
-					ret[i](r)
-				end
+		return function() -- multiple return
+			for i, r in inext, {inst(par())} do
+				ret[i](r)
 			end
 		end
+	end 
 
-	else -- multiple parameter
-		if ret_none then -- no return
-			return function()
-				for i, p in inext, par do
-					param[i] = p()
-				end
-				inst(unpack(param))
+	-- multiple parameter
+	if ret_none then -- no return
+		return function()
+			for i, p in inext, par do
+				param[i] = p()
 			end
-			
-		elseif ret_one then -- single return
-			return function()
-				for i, p in inext, par do
-					param[i] = p()
-				end
-				ret_one(inst(unpack(param)))
+			inst(unpack(param))
+		end
+		
+	elseif ret_one then -- single return
+		return function()
+			for i, p in inext, par do
+				param[i] = p()
 			end
-			
-		else -- multiple return
-			return function()
-				for i, p in inext, par do
-					param[i] = p()
-				end
-				for i, r in inext, {inst(unpack(param))} do
-					ret[i](r)
-				end
-			end
+			ret_one(inst(unpack(param)))
+		end
+	end
+	
+	return function() -- multiple return
+		for i, p in inext, par do
+			param[i] = p()
+		end
+		for i, r in inext, {inst(unpack(param))} do
+			ret[i](r)
 		end
 	end
 end
