@@ -20,6 +20,26 @@ function branch(b, t)
 	if(t) context.line_exe = b
 end
 
+-- allows indexing into a table with multiple keys
+-- table[1][2][3] == "indexn_get table 1 2 3 = _v"
+function indexn_get(tab, i, j, ...)
+	return j and index(tab[i], j, ...) or tab[i]
+end
+function index_get(tab, i)
+	return tab[i]
+end
+
+function indexn_set(v, tab, i, j, ...)
+	if j then
+		indexn_set(v, tab[i], j, ...)
+	else
+		tab[i] = v
+	end
+end
+function index_set(v, tab, i)
+	tab[i] = v
+end
+
 -- need to test, probably faster than just having individual functions
 -- could do a stack math version that allows for better order (1 2 + 3 4 + *)
 function math(...)

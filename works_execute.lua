@@ -1,10 +1,10 @@
 
 works_programs, works_globals = {}, {}
 
-function works_create_program(inst, run_once, unfreezable, obj)
+function works_create_program(inst, run_once, unfreezable, obj, ...)
 	inst = works_func[inst]
 	local loc_cont = {
-		loc_var = {},
+		loc_var = {...},
 		obj_var = obj or {},
 		program = inst, -- list of functions
 		program_len = #inst, 
