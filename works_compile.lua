@@ -22,19 +22,16 @@ end
 
 -- allows indexing into a table with multiple keys
 -- table[1][2][3] == "indexn_get table 1 2 3 = _v"
-function indexn_get(tab, i, j, ...)
-	return j and index(tab[i], j, ...) or tab[i]
+function indexn_get(tab, i, ...)
+	return ... and indexn_get(tab[i], ...) or tab[i]
 end
 function index_get(tab, i)
 	return tab[i]
 end
 
-function indexn_set(v, tab, i, j, ...)
-	if j then
-		indexn_set(v, tab[i], j, ...)
-	else
-		tab[i] = v
-	end
+function indexn_set(v, tab, i, ...)
+	if(...) return indexn_set(v, tab[i], ...)
+	tab[i] = v
 end
 function index_set(v, tab, i)
 	tab[i] = v
@@ -64,12 +61,12 @@ function custom_function(name)
 		if works_returning then
 			works_returning = false
 			return unpack(works_returned)
-		else
-			local _ENV, func = context, works_func[name]
-			add(stack, {program, program_len, line_exe, loc_var})
-			program, program_len, line_exe, loc_var = func, #func, 1, {...}
-			func[1]() -- execute the first instruction automatically. (always will)
 		end
+		
+		local _ENV, func = context, works_func[name]
+		add(stack, {program, program_len, line_exe, loc_var})
+		program, program_len, line_exe, loc_var = func, #func, 1, {...}
+		func[1]() -- execute the first instruction automatically. (always will)
 		-- due to the order of things, we don't need to worry about program line
 	end
 end

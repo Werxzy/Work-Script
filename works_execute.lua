@@ -46,10 +46,9 @@ function works_create_program(inst, run_once, unfreezable, obj, ...)
 		if s then
 			loc_cont.program, loc_cont.program_len, loc_cont.line_exe, loc_cont.loc_var = unpack(s)
 			goto popped
-		else
-			-- no longer executing
-			del(works_programs, loc_cont)
 		end 
+		-- no longer executing
+		del(works_programs, loc_cont)
 	end
 
 	add(works_programs, loc_cont)
